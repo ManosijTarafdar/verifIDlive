@@ -1,1 +1,1 @@
-web: gunicorn verifID.wsgi --log-file -
+web: gunicorn verifID.wsgi --log-file  --timeout 360 -
