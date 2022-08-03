@@ -283,12 +283,12 @@ def attendance(request):
 
 def myid(request):
     teacherDataObject = TeacherData.objects.all().get(email = request.user.email)
-    # get device id
-    macAddress = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
-    # uniqueid
-    uniqueId = teacherDataObject.deviceid
-    if macAddress != uniqueId:
-        return HttpResponse("Device not Registered")
+    # # get device id
+    # macAddress = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
+    # # uniqueid
+    # uniqueId = teacherDataObject.deviceid
+    # if macAddress != uniqueId:
+    #     return HttpResponse("Device not Registered")
     # make qr
     qr_img = qrcode.make(teacherDataObject.collegeid) 
     os.chdir(os.path.join(HOME_DIR+"\\etc"))
