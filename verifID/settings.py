@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-hqipk8ts)r79f196_5gkh6%78p*!$ry2ollg23b7wlug1ut*4g
 DEBUG = False
 
 
-ALLOWED_HOSTS = ['verifidhome.herokuapp.com',]
+ALLOWED_HOSTS = ['verifidhome.herokuapp.com','127.0.0.1']
 #ALLOWED_HOSTS = ['127.0.0.1']
 
 
