@@ -190,12 +190,14 @@ def dashboard(request):
     designation = userObj.designation
     department = userObj.department
     cid = userObj.collegeid
+    profileUrl = fireStore().child(fname+lname+'/profilepicture.jpg').get_url(None)
+    print(profileUrl)
     context = {
         'fullname':fullname,
         'designation':designation,
         'department':department,
         'cid':cid,
-        # 'profilepicture':fireStore().child(fname+lname+'/profilepicture.png').get_url(None),
+        'profilepicture':profileUrl,
     }
     return render(request,'teachers/dashboard.html',context)    
 
