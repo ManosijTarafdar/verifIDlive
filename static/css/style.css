@@ -2,10 +2,6 @@ body{
   margin: 0;
   font-family: consolas;
 }
-.submit_btn:hover{
-  cursor: pointer;
-  background-color: black;
-}
 
 h1{
   font-family:monospace;

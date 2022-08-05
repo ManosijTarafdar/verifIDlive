@@ -3,6 +3,7 @@ from urllib import response
 from django.http import HttpResponse
 from django.shortcuts import render , redirect
 from django.contrib.auth import logout
+from yaml import load
 from home import views
 from datetime import datetime as dt
 from django.contrib.auth.decorators import login_required
@@ -114,41 +115,10 @@ def archive(request):
     if request.method == "POST":
         subject_code = request.POST['subjectcode']
         response = HttpResponse(content_type = "application/ms-excel")
-        response['Content-Disposition'] = "attachment;filename=attendance"+ subject_code +".xls"
-        wb = xlwt.Workbook(encoding='utf-8')
-        ws = wb.add_sheet(subject_code)
-        # cluster URL
-        clusterURL = "mongodb+srv://"+credentials.MONGODB_USERNAME+":"+credentials.MONGODB_PASSWORD+"@attendanccedb.vkkyk.mongodb.net/?retryWrites=true&w=majority"
-        # setup connection with cluster
-        myCluster = MongoClient(clusterURL,tls=True,tlsAllowInvalidCertificates=True)
-        # setup connection with database
-        myDB = myCluster["attendanceMCKVIE"]
-        myClassDB = myCluster["studentData"]
-        # setup connnection with collection
-        myCollection = myDB[subject_code]
-        myClassCollection = myClassDB["CSE"]
-        collectionsCount = myCollection.count_documents({})
-        collectionsData = myCollection.find({})
-        columns = list()
-        columns.append("Roll")
-        columns.append("Name")
-        for i in range(collectionsCount):
-            columns.append(collectionsData[i]['timeStamp'])
-        for colNum in range(len(columns)):
-            ws.write(0,colNum,columns[colNum])
-        batchInfoDoc = myClassCollection.find_one({'batch':'2019-23','currentSem':6})
-        totalClassStrength = batchInfoDoc['totalStrength']
-        rowData = list()
-        for rowNum in range(1,totalClassStrength+1):
-            rowData.append(rowNum)
-            studentName = myClassCollection.find_one({'Roll':rowNum})
-            rowData.append(studentName['Name'])
-            for j in range(collectionsCount):
-                rowData.append(collectionsData[j]['AttendanceList'][rowNum])
-            for k in range(len(rowData)):
-                ws.write(rowNum,k,rowData[k])
-            rowData.clear()
-        wb.save(response)
+        response['Content-Disposition'] = "attachment;filename=attendance"+ subject_code +".xlsx"
+        path = r'attendanceArchive/attendance'+subject_code+'.xlsx'
+        downlaodPath = fireStore().child(path).get_url(None)
+        response.write(requests.get(downlaodPath).content)
         return response
     return render(request,'teachers/getArchive.html')
 
@@ -225,6 +195,7 @@ def dashboard(request):
         'designation':designation,
         'department':department,
         'cid':cid,
+        'profilepicture':fireStore().child(fname+lname+'/profilepicture.png').get_url(None),
     }
     return render(request,'teachers/dashboard.html',context)    
 
@@ -279,6 +250,8 @@ def attendance(request):
         returnValue = mongoAttendanceDB(timeStamp,subjectCode,logBook)
         if returnValue is False:
             return render(request,'teachers/maintainence.html',context = {'message':'Data Record Present'})
+        else:
+            writeFile(timeStamp,subjectCode,logBook)
     return render(request,'teachers/setAttendance.html')
 
 def myid(request):
@@ -363,6 +336,22 @@ def updateProfile(request):
     }
     return render(request,'teachers/updateProfile.html',context)        
 
+from openpyxl import load_workbook
+def writeFile(timeStamp,subjectCode,logBook):
+    filePath = r'etc/attendance'+subjectCode+'.xlsx'
+    file = load_workbook(filePath)
+    sheet = file.active
+    cols = sheet.max_column
+    sheet.cell(row=1,column=cols+1).value = timeStamp
+    totalStudents = getClassStrength('CSE')
+    j = 1
+    for i in range(2,totalStudents+1):
+        sheet.cell(row=i,column=cols+1).value = logBook[j]
+        j = j + 1
+    file.save(filePath)
+    storage = fireStore()
+    fileName = r'attendanceArchive/attendance'+subjectCode+'.xlsx'
+    storage.child(fileName).put(filePath)
 ###################################################################
 #TESTING CODE
 ###################################################################
