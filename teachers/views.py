@@ -359,6 +359,11 @@ def writeFile(timeStamp,subjectCode,logBook):
 ###################################################################
 # from django.contrib.auth.hashers import check_password
 def test(request):
-    return render(request,'teachers/updateProfile.html')
+    path = r'attendanceArchive/attendancePCC-CS601'+'.xlsx'
+    print(BASE_DIR)
+    os.chdir(os.path.join(BASE_DIR,'etc'))
+    fireStore().child(path).download(path='',filename='attendancePCC-CS601.xlsx')
+    os.chdir(BASE_DIR)
+    return HttpResponse("TEST")
 ###################################################################
 ###################################################################
