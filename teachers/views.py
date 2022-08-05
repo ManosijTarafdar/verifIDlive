@@ -113,6 +113,7 @@ def mongoAttendanceDB(timeStamp,subjectCode,attendanceList):
 
 def archive(request):
     if request.method == "POST":
+        fileReset()
         subject_code = request.POST['subjectcode']
         response = HttpResponse(content_type = "application/ms-excel")
         response['Content-Disposition'] = "attachment;filename=attendance"+ subject_code +".xlsx"
@@ -354,6 +355,13 @@ def writeFile(timeStamp,subjectCode,logBook):
     storage = fireStore()
     fileName = r'attendanceArchive/attendance'+subjectCode+'.xlsx'
     storage.child(fileName).put(filePath)
+
+def fileReset():
+    path = r'attendanceArchive/attendancePCC-CS601'+'.xlsx'
+    print(BASE_DIR)
+    os.chdir(os.path.join(BASE_DIR,'etc'))
+    fireStore().child(path).download(path='',filename='attendancePCC-CS601.xlsx')
+    os.chdir(BASE_DIR)
 ###################################################################
 #TESTING CODE
 ###################################################################
