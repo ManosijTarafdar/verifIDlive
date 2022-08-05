@@ -185,13 +185,13 @@ def dashboard(request):
     fname = request.user.first_name
     lname = request.user.last_name
     fullname = fname + " " + lname
-    email = request.user.email
-    userObj = TeacherData.objects.get(email = email)
+    # useremail = request.user.email
+    userObj = TeacherData.objects.get(email = 'manosijindia@gmail.com')
     designation = userObj.designation
     department = userObj.department
     cid = userObj.collegeid
     profileUrl = fireStore().child(fname+lname+'/profilepicture.jpg').get_url(None)
-    print(profileUrl)
+    # print(profileUrl)
     context = {
         'fullname':fullname,
         'designation':designation,
