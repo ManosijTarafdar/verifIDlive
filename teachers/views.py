@@ -195,7 +195,7 @@ def dashboard(request):
         'designation':designation,
         'department':department,
         'cid':cid,
-        'profilepicture':fireStore().child(fname+lname+'/profilepicture.png').get_url(None),
+        # 'profilepicture':fireStore().child(fname+lname+'/profilepicture.png').get_url(None),
     }
     return render(request,'teachers/dashboard.html',context)    
 
