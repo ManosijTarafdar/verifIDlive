@@ -19,7 +19,11 @@
             <nav>
                 <ul>
                     <!-- <li class="welcome-text">Welcome, Manosij</li> -->
-                    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    {% if message != "Not Authorized" %}
+                        <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    {% else %}
+                        <li><a href="{% url 'home' %}">Home</a></li>
+                    {% endif %}
                 </ul>
             </nav>
         </div>

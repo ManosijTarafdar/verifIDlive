@@ -182,7 +182,13 @@ def sendMessage(request):
 
 # My views here.
 @login_required(login_url='home')
+# @allowed_users(allowed_roles=['teachers'])
 def dashboard(request):
+    group = request.user.groups.all()[0].name
+    if group == 'teachers':
+        pass
+    else:
+        return render(request,'teachers/maintainence.html',context = {'message':'Not Authorized'})
     fname = request.user.first_name
     lname = request.user.last_name
     fullname = fname + " " + lname

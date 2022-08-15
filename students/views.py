@@ -16,10 +16,17 @@ import teachers.views as teacherView
 import requests
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
+# from teachers.decorators import allowed_users
 
 # Create your views here.
 @login_required(login_url='home')
+# @allowed_users(allowed_roles=['students'])
 def home(request):
+    group = request.user.groups.all()[0].name
+    if group == 'students':
+        pass
+    else:
+        return render(request,'teachers/maintainence.html',context = {'message':'Not Authorized'})
     fname = request.user.first_name
     lname = request.user.last_name
     fullname = fname + " " + lname
