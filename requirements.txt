@@ -1,6 +1,6 @@
 appdirs==1.4.4
 asgiref==3.5.0
-backports.zoneinfo==0.2.1
+backports.zoneinfo;python_version<"3.9"
 black==21.5b1
 CacheControl==0.12.11
 cachetools==5.1.0
