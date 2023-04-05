@@ -17,5 +17,5 @@ urlpatterns = [
     path('updatePassword/',views.updatePassword,name = 'updatePassword'),
     path('updateProfile/',views.updateProfile,name = 'updateProfile'),
     #test path
-    path('test/',views.test,name = 'test'),
+    # path('test/',views.firebaseAttendance,name = 'test'),
 ]

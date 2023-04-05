@@ -19,6 +19,10 @@ from django.contrib.auth.hashers import check_password
 #---------------------------------------
 import pyrebase
 import os
+import firebase_admin
+from firebase_admin import credentials as FireCred
+from firebase_admin import firestore
+from firebase_admin.firestore import SERVER_TIMESTAMP
 
 from verifID.settings import BASE_DIR, HOME_DIR
 from . import credentials
@@ -75,6 +79,36 @@ def get_idDownloaded(request):
     response['Content-Disposition'] = "attachment;filename=idCard.png"
     response.write(requests.get(downloadURL).content)
     return response
+
+def classStrengthModule(sessionCode,department):
+    cred = FireCred.Certificate("serviceAccountKey.json")
+    try:
+        firebase_admin.initialize_app(cred)
+    except:
+        firebase_admin.initialize_app(cred,name=dt.now().strftime('%d%m%y%H%M%S%f'))
+    myFirestore = firestore.client()
+    myData = myFirestore.collection(sessionCode).document(department).get()
+    value = myData.to_dict()['totalStrength']
+    return value
+
+def setAttendance(sessionCode,department,subjectCode,attendanceList):
+    cred = FireCred.Certificate("serviceAccountKey.json")
+    try:
+        firebase_admin.initialize_app(cred)
+    except:
+        firebase_admin.initialize_app(cred, name=dt.now().strftime('%d%m%y%H%M%S%f'))
+    myFirestore = firestore.client()
+    timeStamp = dt.now().strftime('%d-%m-%y')
+    myData = myFirestore.collection(sessionCode).document(department).collection('subjects').document(subjectCode).collection('attendance').document(timeStamp)
+    if myData.get().to_dict() is not None:
+        return False
+    else:
+        attendanceData = {
+            'timeStamp':SERVER_TIMESTAMP,
+            'attendance':attendanceList
+        }
+        myData.set(attendanceData)
+        return True
 #--------------------------------
 # End
 #--------------------------------
@@ -83,33 +117,36 @@ def get_idDownloaded(request):
 import pymongo
 from pymongo import MongoClient
 from . import credentials
-def mongoAttendanceDB(timeStamp,subjectCode,attendanceList):
-    # For Successful Insertion
-    insertFlag = True
-    # cluster URL
-    clusterURL = "mongodb+srv://"+credentials.MONGODB_USERNAME+":"+credentials.MONGODB_PASSWORD+"@attendanccedb.vkkyk.mongodb.net/?retryWrites=true&w=majority"
-    # setup Connection with cluster
-    myCluster = MongoClient(clusterURL,tls=True,tlsAllowInvalidCertificates=True)
-    # setup connection with database
-    myDB = myCluster["attendanceMCKVIE"]
-    # setup connnection with collection
-    myCollection = myDB[subjectCode]
-    myData = {
-        'timeStamp':timeStamp,
-        'hasData':True,
-        'AttendanceList':attendanceList,
-    }
-    checkDuplicate = myCollection.find_one({'timeStamp':timeStamp})
-    if checkDuplicate is not None:
-        checkDuplicateObject = checkDuplicate['hasData']
-    else:
-        checkDuplicateObject = False
-    if checkDuplicateObject is True:
-        insertFlag = False
-        pass
-    else:
-        myCollection.insert_one(myData)
-    return insertFlag
+
+# Deprecated from 23 October 2022
+
+# def mongoAttendanceDB(timeStamp,subjectCode,attendanceList):
+#     # For Successful Insertion
+#     insertFlag = True
+#     # cluster URL
+#     clusterURL = "mongodb+srv://"+credentials.MONGODB_USERNAME+":"+credentials.MONGODB_PASSWORD+"@attendanccedb.vkkyk.mongodb.net/?retryWrites=true&w=majority"
+#     # setup Connection with cluster
+#     myCluster = MongoClient(clusterURL,tls=True,tlsAllowInvalidCertificates=True)
+#     # setup connection with database
+#     myDB = myCluster["attendanceMCKVIE"]
+#     # setup connnection with collection
+#     myCollection = myDB[subjectCode]
+#     myData = {
+#         'timeStamp':timeStamp,
+#         'hasData':True,
+#         'AttendanceList':attendanceList,
+#     }
+#     checkDuplicate = myCollection.find_one({'timeStamp':timeStamp})
+#     if checkDuplicate is not None:
+#         checkDuplicateObject = checkDuplicate['hasData']
+#     else:
+#         checkDuplicateObject = False
+#     if checkDuplicateObject is True:
+#         insertFlag = False
+#         pass
+#     else:
+#         myCollection.insert_one(myData)
+#     return insertFlag
 
 def archive(request):
     if request.method == "POST":
@@ -123,18 +160,20 @@ def archive(request):
         return response
     return render(request,'teachers/getArchive.html')
 
-def getClassStrength(stream):
-    # cluster URL
-    clusterURL = "mongodb+srv://"+credentials.MONGODB_USERNAME+":"+credentials.MONGODB_PASSWORD+"@attendanccedb.vkkyk.mongodb.net/?retryWrites=true&w=majority"
-    # setup connection with cluster
-    myCluster = MongoClient(clusterURL,tls=True,tlsAllowInvalidCertificates=True)
-    # setup connection with database
-    myDB = myCluster["studentData"]
-    # setup connnection with collection
-    myCollection = myDB[stream]
-    data = myCollection.find_one({'batch':'2019-23','currentSem':6})
-    totalStrength = data['totalStrength']
-    return totalStrength
+# Deprecated from 23 October 2022.
+
+# def getClassStrength(stream):
+#     # cluster URL
+#     clusterURL = "mongodb+srv://"+credentials.MONGODB_USERNAME+":"+credentials.MONGODB_PASSWORD+"@attendanccedb.vkkyk.mongodb.net/?retryWrites=true&w=majority"
+#     # setup connection with cluster
+#     myCluster = MongoClient(clusterURL,tls=True,tlsAllowInvalidCertificates=True)
+#     # setup connection with database
+#     myDB = myCluster["studentData"]
+#     # setup connnection with collection
+#     myCollection = myDB[stream]
+#     data = myCollection.find_one({'batch':'2019-23','currentSem':6})
+#     totalStrength = data['totalStrength']
+#     return totalStrength
 
 def setAncLog(collectionName,filePath,subjectCode,about,dateOfSubmit):
     # cluster URL
@@ -244,20 +283,23 @@ def attendance(request):
     if request.method == "POST":
         subjectCode = request.POST["subjectCode"]
         attendanceList = request.POST["attendanceList"]
+        sessionCode = request.POST['session']
         try:
             attendanceList = list(map(int,attendanceList.split(',')))
         except:
             attendanceList = list(map(int,attendanceList.split(' ')))
         logBook = list()
         logBook.append('null')
-        for i in range(1,getClassStrength("CSE")+1):
+        classStrength = classStrengthModule(sessionCode,'cse')
+        for i in range(1,classStrength+1):
             if i in attendanceList:
                 logBook.append('P')
             else:
                 logBook.append('A')
         timeStamp = dt.now().strftime('%d/%m/%y')
-        returnValue = mongoAttendanceDB(timeStamp,subjectCode,logBook)
-        if returnValue is False:
+        # returnValue = mongoAttendanceDB(timeStamp,subjectCode,logBook)    ---------Deprecated from 23 October 2022
+        value = setAttendance(sessionCode,'cse',subjectCode.lower(),logBook)
+        if value is False:
             return render(request,'teachers/maintainence.html',context = {'message':'Data Record Present'})
         else:
             writeFile(timeStamp,subjectCode,logBook)
@@ -352,7 +394,7 @@ def writeFile(timeStamp,subjectCode,logBook):
     sheet = file.active
     cols = sheet.max_column
     sheet.cell(row=1,column=cols+1).value = timeStamp
-    totalStudents = getClassStrength('CSE')
+    totalStudents = classStrengthModule('2019-23','cse')
     j = 1
     for i in range(2,totalStudents+1):
         sheet.cell(row=i,column=cols+1).value = logBook[j]
@@ -371,13 +413,6 @@ def fileReset():
 ###################################################################
 #TESTING CODE
 ###################################################################
-# from django.contrib.auth.hashers import check_password
-def test(request):
-    path = r'attendanceArchive/attendancePCC-CS601'+'.xlsx'
-    print(BASE_DIR)
-    os.chdir(os.path.join(BASE_DIR,'etc'))
-    fireStore().child(path).download(path='',filename='attendancePCC-CS601.xlsx')
-    os.chdir(BASE_DIR)
-    return HttpResponse("TEST")
+
 ###################################################################
 ###################################################################
